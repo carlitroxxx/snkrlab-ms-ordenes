@@ -10,7 +10,11 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import com.snkrlab.ordenes.dto.EnviarComprobanteDTO;
+import com.snkrlab.ordenes.service.ComprobanteService;
+import jakarta.validation.Valid;
 
+import java.util.Map;
 import java.util.List;
 
 @RestController
@@ -18,12 +22,17 @@ import java.util.List;
 public class OrdenController {
 
     private final OrdenService ordenService;
+    private final ComprobanteService comprobanteService;
 
     @Value("${ordenes.internal-key}")
     private String claveInterna;
 
-    public OrdenController(OrdenService ordenService) {
+    public OrdenController(
+            OrdenService ordenService,
+            ComprobanteService comprobanteService) {
+
         this.ordenService = ordenService;
+        this.comprobanteService = comprobanteService;
     }
 
     private String usuarioIdDesde(Jwt jwt) {
@@ -71,5 +80,26 @@ public class OrdenController {
             @PathVariable Long id) {
 
         return ordenService.obtenerPorId(id, usuarioIdDesde(jwt));
+    }
+
+    @PostMapping("/{id}/comprobante")
+    public ResponseEntity<Map<String, String>> enviarComprobante(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Long id,
+            @Valid @RequestBody EnviarComprobanteDTO solicitud) {
+
+        comprobanteService.enviarComprobante(
+                id,
+                usuarioIdDesde(jwt),
+                solicitud.getCorreo()
+        );
+
+        return ResponseEntity.accepted().body(
+                Map.of(
+                        "mensaje",
+                        "Solicitud de envío recibida. "
+                                + "El comprobante se procesará por correo."
+                )
+        );
     }
 }
