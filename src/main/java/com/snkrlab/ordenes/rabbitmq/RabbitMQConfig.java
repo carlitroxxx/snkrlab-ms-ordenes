@@ -12,9 +12,17 @@ public class RabbitMQConfig {
     public static final String COLA_CORREOS =
             "notificaciones.email.queue";
 
+    public static final String COLA_VENTAS =
+            "reportes.ventas.queue";
+
     @Bean
     public Queue correosQueue() {
         return new Queue(COLA_CORREOS, true);
+    }
+
+    @Bean
+    public Queue ventasQueue() {
+        return new Queue(COLA_VENTAS, true);
     }
 
     @Bean

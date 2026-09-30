@@ -2,7 +2,10 @@ package com.snkrlab.ordenes.service;
 
 import com.snkrlab.ordenes.model.DetalleOrden;
 import com.snkrlab.ordenes.model.Orden;
+import com.snkrlab.ordenes.rabbitmq.DetalleVentaMensaje;
+import com.snkrlab.ordenes.rabbitmq.VentaRegistradaMensaje;
 import com.snkrlab.ordenes.repository.OrdenRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,13 +18,21 @@ import java.util.List;
 public class OrdenService {
 
     private final OrdenRepository ordenRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public OrdenService(OrdenRepository ordenRepository) {
+    public OrdenService(
+            OrdenRepository ordenRepository,
+            ApplicationEventPublisher eventPublisher) {
+
         this.ordenRepository = ordenRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
-    public Orden registrar(String usuarioId, List<DetalleOrden> items) {
+    public Orden registrar(
+            String usuarioId,
+            List<DetalleOrden> items) {
+
         if (items == null || items.isEmpty()) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
@@ -81,11 +92,35 @@ public class OrdenService {
 
         orden.setTotal(total);
 
-        return ordenRepository.save(orden);
+        Orden guardada = ordenRepository.save(orden);
+
+        List<DetalleVentaMensaje> detalleMensaje =
+                guardada.getItems().stream()
+                        .map(item -> new DetalleVentaMensaje(
+                                item.getProductoId(),
+                                item.getNombreProducto(),
+                                item.getCantidad(),
+                                item.getPrecioUnitario(),
+                                item.getSubtotal()
+                        ))
+                        .toList();
+
+        eventPublisher.publishEvent(
+                new VentaRegistradaMensaje(
+                        guardada.getId(),
+                        guardada.getFecha(),
+                        guardada.getTotal(),
+                        detalleMensaje
+                )
+        );
+
+        return guardada;
     }
 
     public List<Orden> obtenerPorUsuario(String usuarioId) {
-        return ordenRepository.findByUsuarioIdOrderByFechaDesc(usuarioId);
+        return ordenRepository.findByUsuarioIdOrderByFechaDesc(
+                usuarioId
+        );
     }
 
     public Orden obtenerPorId(Long id, String usuarioId) {
