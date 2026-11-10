@@ -2,6 +2,9 @@ package com.snkrlab.ordenes.service;
 
 import com.snkrlab.ordenes.model.*;
 import com.snkrlab.ordenes.repository.OrdenRepository;
+import com.snkrlab.ordenes.rabbitmq.VentaRegistradaMensaje;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.ApplicationEventPublisherAware;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,7 +19,13 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
-public class ConfirmacionOrdenService {
+public class ConfirmacionOrdenService implements ApplicationEventPublisherAware {
+    private ApplicationEventPublisher eventPublisher;
+
+    @Override
+    public void setApplicationEventPublisher(ApplicationEventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
+    }
     private final OrdenRepository repository;
     private final PagoValidacionService pagos;
     private final EntityManager entityManager;
@@ -55,7 +64,9 @@ public class ConfirmacionOrdenService {
                 pagos.validarDatos(orden, pagoId, usuario, pago);
                 orden.setPagoId(pagoId);
                 orden.setEstado(EstadoOrden.CONFIRMADA);
-                return repository.saveAndFlush(orden);
+                Orden guardada = repository.saveAndFlush(orden);
+                eventPublisher.publishEvent(VentaRegistradaMensaje.desde(guardada));
+                return guardada;
             });
         } catch (DataIntegrityViolationException | TransientDataAccessException ex) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Conflicto al confirmar la orden. Reintente con el mismo pago.");

@@ -36,7 +36,8 @@ public class ComprobanteService {
         // Este método verifica que la orden pertenezca al usuario.
         Orden orden = ordenService.obtenerPorId(ordenId, usuarioId);
 
-        if (!com.snkrlab.ordenes.model.EstadoOrden.REGISTRADA.equals(orden.getEstado())) {
+        if (!com.snkrlab.ordenes.model.EstadoOrden.REGISTRADA.equals(orden.getEstado())
+                && !com.snkrlab.ordenes.model.EstadoOrden.CONFIRMADA.equals(orden.getEstado())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "La orden no está habilitada para emitir comprobantes.");
         }
@@ -55,7 +56,9 @@ public class ComprobanteService {
         StringBuilder contenido = new StringBuilder();
 
         contenido.append("SNKRLAB\n");
-        contenido.append("Comprobante de orden registrada\n\n");
+        contenido.append(com.snkrlab.ordenes.model.EstadoOrden.CONFIRMADA.equals(orden.getEstado())
+                ? "Comprobante de orden confirmada\n\n"
+                : "Comprobante de orden registrada\n\n");
 
         contenido.append("Orden N.º ")
                 .append(orden.getId())

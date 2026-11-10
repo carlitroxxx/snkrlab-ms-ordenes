@@ -2,7 +2,6 @@ package com.snkrlab.ordenes.service;
 
 import com.snkrlab.ordenes.model.DetalleOrden;
 import com.snkrlab.ordenes.model.Orden;
-import com.snkrlab.ordenes.rabbitmq.DetalleVentaMensaje;
 import com.snkrlab.ordenes.rabbitmq.VentaRegistradaMensaje;
 import com.snkrlab.ordenes.repository.OrdenRepository;
 import org.springframework.context.ApplicationEventPublisher;
@@ -48,11 +47,7 @@ public class OrdenService {
         Orden orden = preparar(usuarioId, items);
         orden.setEstado(EstadoOrden.REGISTRADA);
         Orden guardada = ordenRepository.save(orden);
-        List<DetalleVentaMensaje> detalleMensaje = guardada.getItems().stream()
-                .map(item -> new DetalleVentaMensaje(item.getProductoId(), item.getNombreProducto(),
-                        item.getCantidad(), item.getPrecioUnitario(), item.getSubtotal())).toList();
-        eventPublisher.publishEvent(new VentaRegistradaMensaje(guardada.getId(), guardada.getFecha(),
-                guardada.getTotal(), detalleMensaje));
+        eventPublisher.publishEvent(VentaRegistradaMensaje.desde(guardada));
         return guardada;
     }
 
