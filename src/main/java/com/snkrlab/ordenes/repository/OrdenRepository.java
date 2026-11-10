@@ -8,6 +8,9 @@ import java.util.Optional;
 
 public interface OrdenRepository extends JpaRepository<Orden, Long> {
 
+    Optional<Orden> findByCheckoutId(java.util.UUID checkoutId);
+    Optional<Orden> findByCheckoutIdAndUsuarioId(java.util.UUID checkoutId, String usuarioId);
+
     List<Orden> findByUsuarioIdOrderByFechaDesc(String usuarioId);
 
     Optional<Orden> findByIdAndUsuarioId(Long id, String usuarioId);

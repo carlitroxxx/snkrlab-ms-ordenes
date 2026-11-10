@@ -4,8 +4,10 @@ import java.util.List;
 import java.util.Map;
 
 import com.snkrlab.ordenes.dto.EnviarComprobanteDTO;
-import com.snkrlab.ordenes.model.DetalleOrden;
+import com.snkrlab.ordenes.dto.CrearOrdenDTO;
+import java.util.UUID;
 import com.snkrlab.ordenes.model.Orden;
+import com.snkrlab.ordenes.model.DetalleOrden;
 import com.snkrlab.ordenes.service.ComprobanteService;
 import com.snkrlab.ordenes.service.OrdenService;
 
@@ -70,13 +72,32 @@ public class OrdenController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         }
 
-        Orden orden = ordenService.registrar(
+        Orden orden = ordenService.registrar(usuarioIdDesde(jwt), items);
+        return ResponseEntity.status(HttpStatus.CREATED).body(orden.getId());
+    }
+
+    @PostMapping("/pendientes")
+    public ResponseEntity<Orden> registrarPendiente(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestHeader("X-Internal-Key") String clave,
+            @Valid @RequestBody CrearOrdenDTO solicitud) {
+
+        if (!claveInterna.equals(clave)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        }
+
+        Orden orden = ordenService.registrarPendiente(
                 usuarioIdDesde(jwt),
-                items
+                solicitud
         );
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(orden.getId());
+                .body(orden);
+    }
+
+    @GetMapping("/checkout/{checkoutId}")
+    public Orden obtenerPorCheckout(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID checkoutId) {
+        return ordenService.obtenerPorCheckout(checkoutId, usuarioIdDesde(jwt));
     }
 
     @GetMapping

@@ -36,6 +36,11 @@ public class ComprobanteService {
         // Este método verifica que la orden pertenezca al usuario.
         Orden orden = ordenService.obtenerPorId(ordenId, usuarioId);
 
+        if (!com.snkrlab.ordenes.model.EstadoOrden.REGISTRADA.equals(orden.getEstado())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "La orden no está habilitada para emitir comprobantes.");
+        }
+
         NumberFormat moneda =
                 NumberFormat.getCurrencyInstance(
                         Locale.forLanguageTag("es-CL")

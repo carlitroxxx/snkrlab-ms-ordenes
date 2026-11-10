@@ -7,12 +7,24 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
-@Table(name = "ordenes")
+@Table(name = "ordenes", uniqueConstraints = @UniqueConstraint(name = "uk_ordenes_checkout_id", columnNames = "checkout_id"))
 @Data
 @NoArgsConstructor
 public class Orden {
+
+    @JdbcTypeCode(SqlTypes.CHAR)
+    @Column(name = "checkout_id", length = 36, updatable = false)
+    private UUID checkoutId;
+
+    private Long pagoId;
+
+    @Column(length = 3)
+    private String moneda;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
