@@ -29,6 +29,11 @@ public class PagoValidacionService {
         if (orden == null || !usuario.equals(orden.getUsuarioId()))
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Orden no encontrada.");
         PagoConsultaDTO pago = pagos.consultar(pagoId, jwt);
+        validarDatos(orden, pagoId, usuario, pago);
+        return pago;
+    }
+
+    public void validarDatos(Orden orden, Long pagoId, String usuario, PagoConsultaDTO pago) {
         if (pago == null || !pagoId.equals(pago.id()) || !"APROBADO".equals(pago.resultado())
                 || !usuario.equals(pago.usuarioId()) || orden.getId() == null
                 || !orden.getId().equals(pago.ordenId()) || orden.getTotal() == null
@@ -36,6 +41,5 @@ public class PagoValidacionService {
                 || !orden.getMoneda().equals(pago.moneda())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "El pago no corresponde a la orden o no esta aprobado.");
         }
-        return pago;
     }
 }
