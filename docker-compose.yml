@@ -1,0 +1,61 @@
+services:
+  db-ordenes:
+    image: mysql:8.0
+    container_name: snkrlab-db-ordenes
+    restart: unless-stopped
+    command:
+      - --innodb-buffer-pool-size=64M
+      - --performance-schema=OFF
+      - --max-connections=40
+    environment:
+      MYSQL_DATABASE: snkrlab_orders_db
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Falta MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mysql_orders_data:/var/lib/mysql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'MYSQL_PWD="$${MYSQL_ROOT_PASSWORD}" mysql -h 127.0.0.1 -u root snkrlab_orders_db -e "SELECT 1"'
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  ms-ordenes:
+    build: .
+    container_name: snkrlab-ms-ordenes
+    restart: unless-stopped
+    ports:
+      - "8085:8085"
+    environment:
+      DB_URL: "jdbc:mysql://db-ordenes:3306/snkrlab_orders_db?useSSL=false&allowPublicKeyRetrieval=true"
+      DB_USERNAME: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Falta MYSQL_ROOT_PASSWORD}
+      PAGOS_BASE_URL: ${PAGOS_BASE_URL:?Falta PAGOS_BASE_URL}
+      ORDENES_INTERNAL_KEY: ${ORDENES_INTERNAL_KEY:?Falta ORDENES_INTERNAL_KEY}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:?Falta RABBITMQ_HOST}
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: ${RABBITMQ_USERNAME:?Falta RABBITMQ_USERNAME}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?Falta RABBITMQ_PASSWORD}
+      AZURE_ISSUER_URI: https://login.microsoftonline.com/
+      AZURE_TENANT_ID: ${AZURE_TENANT_ID:?Falta AZURE_TENANT_ID}
+      AZURE_CLIENT_ID: ${AZURE_CLIENT_ID:?Falta AZURE_CLIENT_ID}
+      COGNITO_ISSUER: ${COGNITO_ISSUER:?Falta COGNITO_ISSUER}
+      COGNITO_CLIENT_ID: ${COGNITO_CLIENT_ID:?Falta COGNITO_CLIENT_ID}
+      JAVA_TOOL_OPTIONS: "-Djava.net.preferIPv4Stack=true -Xms64m -Xmx320m"
+    depends_on:
+      db-ordenes:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  mysql_orders_data:
